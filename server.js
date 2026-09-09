@@ -7,7 +7,9 @@
 import express from "express";
 
 const app = express();
-const PORT = 3000;
+// Serviços de hospedagem (Render, Railway, etc.) definem a porta através da
+// variável de ambiente PORT. Localmente, sem essa variável, cai no 3000.
+const PORT = process.env.PORT || 3000;
 
 // Serve os arquivos estáticos do frontend (index.html, style.css, etc.)
 app.use(express.static("public"));

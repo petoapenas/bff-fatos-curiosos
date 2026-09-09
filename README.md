@@ -64,6 +64,23 @@ bff-fatos-curiosos/
     └── style.css       # dark mode + glassmorphism
 ```
 
+## Deploy (link público)
+
+O GitHub Pages não serve, pois só hospeda arquivos estáticos e este projeto
+precisa do `server.js` rodando. Uma opção com plano gratuito é o
+[Render](https://render.com):
+
+1. Suba o repositório para o GitHub (veja a seção anterior).
+2. Crie uma conta no Render e clique em **New > Web Service**, conectando o
+   repositório.
+3. Configure:
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+4. Finalize o deploy. O Render gera uma URL pública (`https://seu-app.onrender.com`).
+
+No plano gratuito o serviço "dorme" após um tempo sem acesso; a primeira
+requisição depois disso pode demorar de 30 a 60 segundos para responder.
+
 ## Projeto acadêmico
 
 Feito para fins de estudo do padrão BFF; sem licença específica associada.
