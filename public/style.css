@@ -245,8 +245,8 @@ body {
 }
 
 .status-badge {
-  width: 84px;
-  height: 84px;
+  width: 250px;
+  height: 175px;
   border-radius: 16px;
   object-fit: cover;
   background: rgba(255, 255, 255, 0.04);
