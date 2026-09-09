@@ -1,0 +1,14 @@
+{
+  "name": "bff-fatos-curiosos",
+  "version": "1.0.0",
+  "description": "Projeto acadêmico BFF (Backend for Frontend) que consome APIs de terceiros exclusivamente pelo backend (Chuck Norris, Rick and Morty, Bíblia) e expõe endpoints próprios para um frontend estático.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

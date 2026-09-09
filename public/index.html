@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Três fontes, um só backend</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Manchas de cor desfocadas atrás dos cards, base do efeito de vidro -->
+  <div class="bg-blob bg-blob--chuck" aria-hidden="true"></div>
+  <div class="bg-blob bg-blob--rick" aria-hidden="true"></div>
+  <div class="bg-blob bg-blob--biblia" aria-hidden="true"></div>
+
+  <div class="page">
+    <header class="page-header">
+      <h1>Três fontes, um só backend</h1>
+      <p>
+        Este servidor em Node.js e Express busca uma piada, um personagem e
+        um versículo em três serviços diferentes, e entrega tudo já
+        traduzido e organizado para esta página. O frontend nunca fala com
+        essas APIs diretamente — só com o próprio backend.
+      </p>
+    </header>
+
+    <main class="cards-grid">
+      <!-- CARD A: Chuck Norris -->
+      <article class="card card--chuck">
+        <div class="card-head">
+          <span class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 2L3 14h7l-1 8 10-13h-7l1-7z" />
+            </svg>
+          </span>
+          <h2>Fato sobre Chuck Norris</h2>
+        </div>
+
+        <div class="card-body" id="chuck-content">
+          <p class="joke-text" id="chuck-pt">Buscando uma piada…</p>
+          <p class="joke-text-en" id="chuck-en"></p>
+        </div>
+
+        <div class="card-foot">
+          <button class="card-btn" id="chuck-btn" type="button">Buscar outra piada</button>
+          <img class="status-badge" id="chuck-status-img" alt="Status HTTP da última requisição" />
+        </div>
+      </article>
+
+      <!-- CARD B: Rick and Morty -->
+      <article class="card card--rick">
+        <div class="card-head">
+          <span class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <ellipse cx="12" cy="12" rx="9" ry="6" />
+              <ellipse cx="12" cy="12" rx="4.5" ry="3" />
+            </svg>
+          </span>
+          <h2>Personagem aleatório</h2>
+        </div>
+
+        <div class="card-body" id="rick-content">
+          <div class="rick-row">
+            <img class="rick-photo" id="rick-imagem" alt="Retrato do personagem sorteado" />
+            <div class="rick-meta">
+              <p class="rick-name" id="rick-nome">Sorteando personagem…</p>
+              <div class="rick-stats">
+                <div class="stat">
+                  <span class="stat-label">Espécie</span>
+                  <span class="stat-value" id="rick-especie">—</span>
+                </div>
+                <div class="stat">
+                  <span class="stat-label">Status</span>
+                  <span class="stat-value" id="rick-status">—</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-foot">
+          <button class="card-btn" id="rick-btn" type="button">Sortear outro</button>
+          <img class="status-badge" id="rick-status-img" alt="Status HTTP da última requisição" />
+        </div>
+      </article>
+
+      <!-- CARD C: Bíblia -->
+      <article class="card card--biblia">
+        <div class="card-head">
+          <span class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 6.5C10 5 7 4.5 4 4.5v13c3 0 6 .5 8 2 2-1.5 5-2 8-2v-13c-3 0-6 .5-8 2z" />
+            </svg>
+          </span>
+          <h2>Passagem bíblica</h2>
+        </div>
+
+        <div class="card-body" id="biblia-content">
+          <blockquote class="verse-text" id="biblia-texto">Sorteando uma passagem…</blockquote>
+          <cite class="verse-ref" id="biblia-referencia"></cite>
+        </div>
+
+        <div class="card-foot">
+          <button class="card-btn" id="biblia-btn" type="button">Sortear outra</button>
+          <img class="status-badge" id="biblia-status-img" alt="Status HTTP da última requisição" />
+        </div>
+      </article>
+    </main>
+
+    <footer class="page-footer">
+      <p>Projeto acadêmico de demonstração do padrão BFF (Backend for Frontend).</p>
+    </footer>
+  </div>
+
+  <script>
+    // Aplica a imagem do http.cat correspondente ao status HTTP retornado
+    // pelo nosso próprio backend (200 = sucesso, 500 = erro).
+    function definirImagemStatus(imgEl, status) {
+      const codigo = status ?? 500;
+      imgEl.src = `https://http.cat/${codigo}`;
+      imgEl.alt = `Status HTTP ${codigo}`;
+    }
+
+    // Desabilita o botão e marca o conteúdo como "carregando" durante o fetch.
+    function definirCarregando(botao, conteudo, carregando) {
+      botao.disabled = carregando;
+      conteudo.classList.toggle('is-loading', carregando);
+    }
+
+    async function carregarChuck() {
+      const botao = document.getElementById('chuck-btn');
+      const conteudo = document.getElementById('chuck-content');
+      const statusImg = document.getElementById('chuck-status-img');
+
+      definirCarregando(botao, conteudo, true);
+      try {
+        const resposta = await fetch('/api/chuck');
+        const dados = await resposta.json();
+
+        document.getElementById('chuck-pt').textContent =
+          dados.piadaPt || 'Não foi possível traduzir a piada.';
+        document.getElementById('chuck-en').textContent = dados.piadaEn || '';
+        definirImagemStatus(statusImg, dados.statusHttp);
+      } catch (erro) {
+        document.getElementById('chuck-pt').textContent =
+          'Não foi possível carregar a piada agora.';
+        document.getElementById('chuck-en').textContent = '';
+        definirImagemStatus(statusImg, 500);
+      } finally {
+        definirCarregando(botao, conteudo, false);
+      }
+    }
+
+    async function carregarRick() {
+      const botao = document.getElementById('rick-btn');
+      const conteudo = document.getElementById('rick-content');
+      const statusImg = document.getElementById('rick-status-img');
+
+      definirCarregando(botao, conteudo, true);
+      try {
+        const resposta = await fetch('/api/rick');
+        const dados = await resposta.json();
+
+        document.getElementById('rick-imagem').src = dados.imagem || '';
+        document.getElementById('rick-nome').textContent = dados.nome || 'Personagem desconhecido';
+        document.getElementById('rick-especie').textContent = dados.especie || '—';
+        document.getElementById('rick-status').textContent = dados.status || '—';
+        definirImagemStatus(statusImg, dados.statusHttp);
+      } catch (erro) {
+        document.getElementById('rick-nome').textContent = 'Não foi possível carregar o personagem.';
+        document.getElementById('rick-especie').textContent = '—';
+        document.getElementById('rick-status').textContent = '—';
+        definirImagemStatus(statusImg, 500);
+      } finally {
+        definirCarregando(botao, conteudo, false);
+      }
+    }
+
+    async function carregarBiblia() {
+      const botao = document.getElementById('biblia-btn');
+      const conteudo = document.getElementById('biblia-content');
+      const statusImg = document.getElementById('biblia-status-img');
+
+      definirCarregando(botao, conteudo, true);
+      try {
+        const resposta = await fetch('/api/biblia');
+        const dados = await resposta.json();
+
+        document.getElementById('biblia-texto').textContent =
+          dados.texto || 'Não foi possível carregar o versículo.';
+        document.getElementById('biblia-referencia').textContent = dados.referencia || '';
+        definirImagemStatus(statusImg, dados.statusHttp);
+      } catch (erro) {
+        document.getElementById('biblia-texto').textContent =
+          'Não foi possível carregar o versículo agora.';
+        document.getElementById('biblia-referencia').textContent = '';
+        definirImagemStatus(statusImg, 500);
+      } finally {
+        definirCarregando(botao, conteudo, false);
+      }
+    }
+
+    document.getElementById('chuck-btn').addEventListener('click', carregarChuck);
+    document.getElementById('rick-btn').addEventListener('click', carregarRick);
+    document.getElementById('biblia-btn').addEventListener('click', carregarBiblia);
+
+    // Carrega os três cards automaticamente assim que a página abre.
+    carregarChuck();
+    carregarRick();
+    carregarBiblia();
+  </script>
+</body>
+</html>

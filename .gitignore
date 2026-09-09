@@ -1,0 +1,15 @@
+# Dependências (reinstaladas com "npm install")
+node_modules/
+
+# Logs
+npm-debug.log*
+*.log
+
+# Variáveis de ambiente
+.env
+.env.local
+
+# Sistema operacional / editores
+.DS_Store
+Thumbs.db
+.vscode/
