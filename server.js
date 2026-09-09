@@ -14,6 +14,56 @@ const PORT = process.env.PORT || 3000;
 // Serve os arquivos estáticos do frontend (index.html, style.css, etc.)
 app.use(express.static("public"));
 
+// Cache simples em memória: se a mesma piada (o catálogo do Chuck Norris é
+// finito) já foi traduzida antes, reaproveita o resultado em vez de gastar
+// cota da API de tradução de novo. Zera quando o servidor reinicia.
+const cacheTraducoes = new Map();
+
+// Opcional: um e-mail válido multiplica por 10 o limite diário gratuito da
+// MyMemory (de 5.000 para 50.000 caracteres/dia) — é a própria MyMemory que
+// recomenda isso. Configure a variável de ambiente MYMEMORY_EMAIL (no Render:
+// aba Environment) com o seu e-mail para ativar. Sem ela, tudo continua
+// funcionando, só que com o limite menor.
+const EMAIL_MYMEMORY = process.env.MYMEMORY_EMAIL;
+
+// Traduz um texto para português usando a MyMemory, tratando corretamente o
+// caso em que a cota diária acabou. Retorna null quando não foi possível
+// traduzir (nunca retorna o aviso de erro da MyMemory como se fosse texto
+// traduzido).
+async function traduzirParaPortugues(texto) {
+  if (cacheTraducoes.has(texto)) {
+    return cacheTraducoes.get(texto);
+  }
+
+  try {
+    let url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(texto)}&langpair=en|pt-br`;
+    if (EMAIL_MYMEMORY) {
+      url += `&de=${encodeURIComponent(EMAIL_MYMEMORY)}`;
+    }
+
+    const resposta = await fetch(url);
+    const dados = await resposta.json();
+
+    // A MyMemory devolve HTTP 200 mesmo quando a cota diária acabou; o aviso
+    // vem dentro de "translatedText". Por isso checamos "responseStatus" e
+    // "quotaFinished" antes de confiar no texto traduzido.
+    const cotaEsgotada = dados.responseStatus !== 200 || dados.quotaFinished === true;
+    if (cotaEsgotada) {
+      return null;
+    }
+
+    const traducao = dados.responseData.translatedText;
+    cacheTraducoes.set(texto, traducao);
+    return traducao;
+  } catch (erro) {
+    // Qualquer falha na tradução (rede, MyMemory fora do ar, JSON inválido)
+    // não deve derrubar o endpoint inteiro — a piada em inglês ainda pode
+    // ser exibida.
+    console.error("Erro ao traduzir:", erro.message);
+    return null;
+  }
+}
+
 // -----------------------------------------------------------------------
 // Endpoint A: GET /api/chuck
 // Busca uma piada aleatória do Chuck Norris (em inglês) e traduz para PT-BR.
@@ -25,17 +75,14 @@ app.get("/api/chuck", async (req, res) => {
     const chuckData = await chuckResponse.json();
     const piadaEn = chuckData.value;
 
-    // 2) Traduz a piada usando a API MyMemory
-    const query = encodeURIComponent(piadaEn);
-    const traducaoResponse = await fetch(
-      `https://api.mymemory.translated.net/get?q=${query}&langpair=en|pt-br`
-    );
-    const traducaoData = await traducaoResponse.json();
-    const piadaPt = traducaoData.responseData.translatedText;
+    // 2) Traduz a piada (com cache e tratamento de cota esgotada)
+    const piadaPt = await traduzirParaPortugues(piadaEn);
 
     return res.status(200).json({
       statusHttp: 200,
-      piadaPt,
+      piadaPt:
+        piadaPt ??
+        "Tradução indisponível no momento (limite diário do serviço de tradução foi atingido). Aqui está a piada original:",
       piadaEn,
     });
   } catch (erro) {

@@ -64,6 +64,14 @@ bff-fatos-curiosos/
     └── style.css       # dark mode + glassmorphism
 ```
 
+## Variáveis de ambiente (opcional)
+
+| Variável         | Para que serve                                                                 |
+|------------------|----------------------------------------------------------------------------------|
+| `MYMEMORY_EMAIL` | Aumenta o limite diário gratuito da API de tradução (MyMemory) de 5.000 para 50.000 caracteres/dia. Sem essa variável o projeto funciona normalmente, só que com o limite menor — e pode esbarrar nele em dias de uso mais pesado, já que a cota é compartilhada entre todos os visitantes do site (a tradução acontece no backend). |
+
+No Render, essa variável é configurada na aba **Environment** do serviço.
+
 ## Deploy (link público)
 
 O GitHub Pages não serve, pois só hospeda arquivos estáticos e este projeto
